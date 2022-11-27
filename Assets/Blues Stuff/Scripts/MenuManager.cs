@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Text;
 
 public class MenuManager : MonoBehaviour
 {
@@ -15,7 +16,20 @@ public class MenuManager : MonoBehaviour
     public float ButtonHoverTime;
     public float ButtonPressScale;
 
-    public GameObject[] disableOnStart;
+    public GameObject[] DisableOnStart;
+
+    [Header("Menus")]
+    public GameObject GameMenu;
+    public GameObject JoinMenu;
+    public GameObject PlayMenu;
+
+    [Header("Game Menu")]
+
+    public TMP_InputField Player1;
+    public TMP_InputField Player2;
+    public Button StartButton;
+    public Button DifficultyButton;
+    public Button CodeButton;
 
     private void Awake()
     {
@@ -28,12 +42,12 @@ public class MenuManager : MonoBehaviour
             Debug.LogError("BNlue you ideiot");
         }
 
-        foreach (GameObject go in disableOnStart)
+        foreach (GameObject go in DisableOnStart)
         {
             go.SetActive(false);
         }
     }
-    private void DeleteCaret()
+    private void ResizeCaret()
     {
         foreach (TMP_SelectionCaret item in GetComponentsInChildren<TMP_SelectionCaret>())
         {
@@ -42,13 +56,18 @@ public class MenuManager : MonoBehaviour
     }
     public void InitPrivateLobbyMenu()
     {
-        Invoke("DeleteCaret", 0.5f);
+        Invoke("ResizeCaret", 0.5f);
     }
 
     public void Exit() 
     {
         Application.Quit();
         Debug.Log("Quit!");
+    }
+
+    public void ThrowErrorSFX(ConnectionFailType failType)
+    {
+        Debug.Log("error");
     }
     
     public void PasteFromClipBoard(TMP_InputField text)
@@ -57,8 +76,68 @@ public class MenuManager : MonoBehaviour
         textEditor.multiline = true;
         textEditor.Paste();
 
-        Debug.Log(textEditor.text);
+        if (textEditor.text.Length >= 8)
+        {
+            textEditor.text = textEditor.text.Substring(0, 8);
+        }
 
-        text.text = textEditor.text;
+        StringBuilder sb = new StringBuilder(textEditor.text);
+
+        for (int i = 0; i < textEditor.text.Length; i++)
+        {
+            sb[i] = FixCodeText.FixChar(sb[i]);
+        }
+        text.text = sb.ToString();
+    }
+    public void InitGameMenu()
+    {
+        Invoke("ResizeCaret", 0.5f);
+    }
+
+    public void OnEditPlayer1()
+    {
+
+    }
+    public void OnEditPlayer2()
+    {
+
+    }
+    public async void JoinAsClient(TMP_InputField codeText)
+    {
+        await NetworkHelper.Singleton.JoinAsClient(codeText.text, JoinAttemptCallback);
+    }
+    public async void CreateAsHost()
+    {
+        await NetworkHelper.Singleton.JoinAsHost(CreateAttemptCallback);
+    }
+
+    public void JoinAttemptCallback(bool started)
+    {
+        if (started)
+        {
+            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "CoNnECtED";
+        }
+        else
+        {
+            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "FaIlED";
+        }
+
+        JoinMenu.SetActive(false);
+        GameMenu.SetActive(true);
+    }
+
+    public void CreateAttemptCallback(bool started, string joinCode)
+    {
+        if (started)
+        {
+            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = joinCode;
+        }
+        else
+        {
+            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "FaIlED";
+        }
+
+        PlayMenu.SetActive(false);
+        GameMenu.SetActive(true);
     }
 }
