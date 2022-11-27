@@ -108,7 +108,12 @@ public class MenuManager : MonoBehaviour
     }
     public async void CreateAsHost()
     {
-        await NetworkHelper.Singleton.JoinAsHost(CreateAttemptCallback);
+        await NetworkHelper.Singleton.JoinAsHost(CreateAttemptCallback, true);
+    }
+
+    public async void JoinPublic()
+    {
+        //await NetworkHelper.Singleton.JoinAsHost(CreateAttemptCallback, false);
     }
 
     public void JoinAttemptCallback(bool started)
@@ -126,11 +131,11 @@ public class MenuManager : MonoBehaviour
         GameMenu.SetActive(true);
     }
 
-    public void CreateAttemptCallback(bool started, string joinCode)
+    public void CreateAttemptCallback(bool started, string lobbyJoinCode)
     {
         if (started)
         {
-            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = joinCode;
+            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = lobbyJoinCode;
         }
         else
         {
