@@ -11,18 +11,24 @@ using System;
 using System.Collections.Generic;
 using Unity.Services.Lobbies.Models;
 using System.Collections;
-using ParrelSync;
 
 public class NetworkHelper : MonoBehaviour
 {
     public static NetworkHelper Singleton;
+    public bool DevelopementBuild = true;
 
     [HideInInspector]
     [Tooltip("The current lobby the player is connected to")]
     public Lobby Lobby;
 
-    string _playerID;
+    [HideInInspector]
+    [Tooltip("The current player's Auth ID")]
+    public string PlayerID;
+     
     string JoinCodeKey = "a";
+
+    [HideInInspector]
+    [Tooltip("The current lobby the player is connected to")]
     UnityTransport _transport;
     private async void Awake()
     {
@@ -37,15 +43,15 @@ public class NetworkHelper : MonoBehaviour
 
         InitializationOptions options = new InitializationOptions();
 
-#if UNITY_EDITOR
-        options.SetProfile(ClonesManager.IsClone() ? ClonesManager.GetArgument() : "Main");
-        Debug.Log(ClonesManager.IsClone() ? "STARTING AS CLONE" : "MAIN EDITOR");
-#endif
+        if (DevelopementBuild)
+        {
+            options.SetProfile(UnityEngine.Random.Range(float.MinValue, float.MaxValue).ToString());
+        }
 
         await UnityServices.InitializeAsync(options);
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
          
-        _playerID = AuthenticationService.Instance.PlayerId;
+        PlayerID = AuthenticationService.Instance.PlayerId;
 
         _transport = GetComponent<UnityTransport>();
     }
@@ -54,34 +60,24 @@ public class NetworkHelper : MonoBehaviour
     {
         JoinAllocation a;
 
-        Lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(joinCode);
-        Debug.Log(Lobby.Data[JoinCodeKey].Value.Length);
-        a = await RelayService.Instance.JoinAllocationAsync(Lobby.Data[JoinCodeKey].Value);
-        
-        //a = await RelayService.Instance.JoinAllocationAsync(joinCode);
-
-
-        //try
-        //{
-        //    try
-        //    {
-        //        Lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(joinCode);
-        //    }
-        //    catch
-        //    {
-        //        MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyConnectError);
-        //        return;
-        //    }
-        //    Debug.Log("Joincode" + Lobby.Data[JoinCodeKey].Value);
-
-        //    a = await RelayService.Instance.JoinAllocationAsync(Lobby.Data[JoinCodeKey].Value);
-        //}
-        //catch
-        //{
-        //    MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.RelayConnectError);
-        //    throw;
-        //    return;
-        //}
+        try
+        {
+            try
+            {
+                Lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(joinCode);
+            }
+            catch
+            {
+                MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyConnectError);
+                return;
+            }
+            a = await RelayService.Instance.JoinAllocationAsync(Lobby.Data[JoinCodeKey].Value);
+        }
+        catch
+        {
+            MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.RelayConnectError);
+            return;
+        }
 
         _transport.SetClientRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData, a.HostConnectionData);
 
@@ -93,7 +89,6 @@ public class NetworkHelper : MonoBehaviour
         Allocation a = await RelayService.Instance.CreateAllocationAsync(2);
 
         string relayJoinCode = await RelayService.Instance.GetJoinCodeAsync(a.AllocationId);
-        Debug.Log("Joincode" + relayJoinCode);
 
         CreateLobbyOptions lobbyOptions = new CreateLobbyOptions
         {
@@ -142,13 +137,13 @@ public class NetworkHelper : MonoBehaviour
         StopAllCoroutines();
         if (Lobby != null)
         {
-            if (Lobby.HostId == _playerID)
+            if (Lobby.HostId == PlayerID)
             {
                 Lobbies.Instance.DeleteLobbyAsync(Lobby.Id);
             }
             else
             {
-                Lobbies.Instance.RemovePlayerAsync(Lobby.Id, _playerID);
+                Lobbies.Instance.RemovePlayerAsync(Lobby.Id, PlayerID);
             }
         }
     }

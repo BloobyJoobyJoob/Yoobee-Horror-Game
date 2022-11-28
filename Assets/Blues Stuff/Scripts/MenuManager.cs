@@ -31,6 +31,8 @@ public class MenuManager : MonoBehaviour
     public Button DifficultyButton;
     public Button CodeButton;
 
+    private string lobbyJoinCode = "*";
+
     private void Awake()
     {
         if (Singleton == null)
@@ -72,22 +74,25 @@ public class MenuManager : MonoBehaviour
     
     public void PasteFromClipBoard(TMP_InputField text)
     {
-        TextEditor textEditor = new();
-        textEditor.multiline = true;
-        textEditor.Paste();
+        string pastedText = GUIUtility.systemCopyBuffer;
 
-        if (textEditor.text.Length >= 8)
+        if (pastedText.Length >= 8)
         {
-            textEditor.text = textEditor.text.Substring(0, 8);
+            pastedText = pastedText.Substring(0, 8);
         }
 
-        StringBuilder sb = new StringBuilder(textEditor.text);
+        StringBuilder sb = new StringBuilder(pastedText);
 
-        for (int i = 0; i < textEditor.text.Length; i++)
+        for (int i = 0; i < pastedText.Length; i++)
         {
             sb[i] = FixCodeText.FixChar(sb[i]);
         }
         text.text = sb.ToString();
+    }
+
+    public void CopyFromClipBoard()
+    {
+        GUIUtility.systemCopyBuffer = lobbyJoinCode;
     }
     public void InitGameMenu()
     {
@@ -104,7 +109,7 @@ public class MenuManager : MonoBehaviour
     }
     public async void JoinAsClient(TMP_InputField codeText)
     {
-        await NetworkHelper.Singleton.JoinClient(ClientCallback, codeText.text);
+        await NetworkHelper.Singleton.JoinClient(ClientAttemptCallback, codeText.text);
     }
     public async void CreateAsHost()
     {
@@ -116,22 +121,23 @@ public class MenuManager : MonoBehaviour
         await NetworkHelper.Singleton.JoinPublic(ConnectAttemptCallback);
     }
 
-    public void ClientCallback(bool started)
+    public void ClientAttemptCallback(bool started)
     {
         ConnectAttemptCallback(started, "");
     }
 
-    public void ConnectAttemptCallback(bool started, string lobbyJoinCode)
+    public void ConnectAttemptCallback(bool started, string joinCode)
     {
         if (started)
         {
-            if (lobbyJoinCode == "")
+            if (joinCode == "")
             {
                 CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "CoNnECtED";
             }
             else
             {
-                CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = lobbyJoinCode;
+                lobbyJoinCode = joinCode;
+                CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = joinCode;
             }
         }
         else
