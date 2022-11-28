@@ -39,6 +39,7 @@ public class NetworkHelper : MonoBehaviour
 
 #if UNITY_EDITOR
         options.SetProfile(ClonesManager.IsClone() ? ClonesManager.GetArgument() : "Main");
+        Debug.Log(ClonesManager.IsClone() ? "STARTING AS CLONE" : "MAIN EDITOR");
 #endif
 
         await UnityServices.InitializeAsync(options);
@@ -49,31 +50,50 @@ public class NetworkHelper : MonoBehaviour
         _transport = GetComponent<UnityTransport>();
     }
 
-    public async Task JoinAsClient(string joinCode, Action<bool> callback)
+    public async Task JoinClient(Action<bool> callback, string joinCode)
     {
         JoinAllocation a;
 
-        try
-        {
-            Lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(joinCode);
-            a = await RelayService.Instance.JoinAllocationAsync(Lobby.Data[JoinCodeKey].Value);
-        }
-        catch
-        {
-            MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.BadCode);
-            return;
-        }
+        Lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(joinCode);
+        Debug.Log(Lobby.Data[JoinCodeKey].Value.Length);
+        a = await RelayService.Instance.JoinAllocationAsync(Lobby.Data[JoinCodeKey].Value);
+        
+        //a = await RelayService.Instance.JoinAllocationAsync(joinCode);
+
+
+        //try
+        //{
+        //    try
+        //    {
+        //        Lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(joinCode);
+        //    }
+        //    catch
+        //    {
+        //        MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyConnectError);
+        //        return;
+        //    }
+        //    Debug.Log("Joincode" + Lobby.Data[JoinCodeKey].Value);
+
+        //    a = await RelayService.Instance.JoinAllocationAsync(Lobby.Data[JoinCodeKey].Value);
+        //}
+        //catch
+        //{
+        //    MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.RelayConnectError);
+        //    throw;
+        //    return;
+        //}
 
         _transport.SetClientRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData, a.HostConnectionData);
 
         callback(NetworkManager.Singleton.StartClient());
     }
 
-    public async Task JoinAsHost(Action<bool, string> callback, bool isPrivate)
+    public async Task JoinHost(Action<bool, string> callback, bool isPrivate)
     {
         Allocation a = await RelayService.Instance.CreateAllocationAsync(2);
 
         string relayJoinCode = await RelayService.Instance.GetJoinCodeAsync(a.AllocationId);
+        Debug.Log("Joincode" + relayJoinCode);
 
         CreateLobbyOptions lobbyOptions = new CreateLobbyOptions
         {
@@ -93,6 +113,19 @@ public class NetworkHelper : MonoBehaviour
         _transport.SetHostRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData);
 
         callback(NetworkManager.Singleton.StartHost(), Lobby.LobbyCode);
+    }
+    public async Task JoinPublic(Action<bool, string> callback)
+    {
+        try
+        {
+            Lobby quickJoin = await Lobbies.Instance.QuickJoinLobbyAsync();
+        }
+        catch
+        {
+            await JoinHost(callback, false);
+            return;
+        }
+        callback(true, "");
     }
 
     IEnumerator LobbyHeartbeat(string lobbyID, float waitTime)
@@ -122,5 +155,5 @@ public class NetworkHelper : MonoBehaviour
 }
 
 public enum ConnectionFailType {
-    BadCode, BadConnect
+    LobbyConnectError, RelayConnectError
 }

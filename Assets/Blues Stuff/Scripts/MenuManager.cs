@@ -67,7 +67,7 @@ public class MenuManager : MonoBehaviour
 
     public void ThrowErrorSFX(ConnectionFailType failType)
     {
-        Debug.Log("error");
+        Debug.LogError(failType.ToString());
     }
     
     public void PasteFromClipBoard(TMP_InputField text)
@@ -104,45 +104,42 @@ public class MenuManager : MonoBehaviour
     }
     public async void JoinAsClient(TMP_InputField codeText)
     {
-        await NetworkHelper.Singleton.JoinAsClient(codeText.text, JoinAttemptCallback);
+        await NetworkHelper.Singleton.JoinClient(ClientCallback, codeText.text);
     }
     public async void CreateAsHost()
     {
-        await NetworkHelper.Singleton.JoinAsHost(CreateAttemptCallback, true);
+        await NetworkHelper.Singleton.JoinHost(ConnectAttemptCallback, true);
     }
 
     public async void JoinPublic()
     {
-        //await NetworkHelper.Singleton.JoinAsHost(CreateAttemptCallback, false);
+        await NetworkHelper.Singleton.JoinPublic(ConnectAttemptCallback);
     }
 
-    public void JoinAttemptCallback(bool started)
+    public void ClientCallback(bool started)
+    {
+        ConnectAttemptCallback(started, "");
+    }
+
+    public void ConnectAttemptCallback(bool started, string lobbyJoinCode)
     {
         if (started)
         {
-            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "CoNnECtED";
+            if (lobbyJoinCode == "")
+            {
+                CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "CoNnECtED";
+            }
+            else
+            {
+                CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = lobbyJoinCode;
+            }
         }
         else
         {
             CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "FaIlED";
         }
-
+         
         JoinMenu.SetActive(false);
-        GameMenu.SetActive(true);
-    }
-
-    public void CreateAttemptCallback(bool started, string lobbyJoinCode)
-    {
-        if (started)
-        {
-            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = lobbyJoinCode;
-        }
-        else
-        {
-            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "FaIlED";
-        }
-
-        PlayMenu.SetActive(false);
         GameMenu.SetActive(true);
     }
 }
