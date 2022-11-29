@@ -1510,8 +1510,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 2533359615
+  m_fontColor: {r: 1, g: 1, b: 1, a: 0.5882353}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -3186,6 +3186,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Quantum Console (SRP)
       objectReference: {fileID: 0}
+    - target: {fileID: 4735113768296962263, guid: 2da3dcc22749e7f4280737786d898334,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4746035142520893616, guid: 2da3dcc22749e7f4280737786d898334,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -3224,6 +3229,11 @@ PrefabInstance:
     - target: {fileID: 4844316182991342303, guid: 2da3dcc22749e7f4280737786d898334,
         type: 3}
       propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4844316182991342303, guid: 2da3dcc22749e7f4280737786d898334,
+        type: 3}
+      propertyPath: m_AnchorMin.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4844785881582304729, guid: 2da3dcc22749e7f4280737786d898334,
@@ -3413,8 +3423,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4845276930943762971, guid: 2da3dcc22749e7f4280737786d898334,
         type: 3}
-      propertyPath: m_AnchoredPosition.y
+      propertyPath: m_SizeDelta.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4845276930943762971, guid: 2da3dcc22749e7f4280737786d898334,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -0.000030517578
       objectReference: {fileID: 0}
     - target: {fileID: 4845637959249703711, guid: 2da3dcc22749e7f4280737786d898334,
         type: 3}
@@ -3803,7 +3818,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b9150f3497787b498629ba9e6846125, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ButtonHoverColor: {r: 0.8679245, g: 0.79013884, b: 0.79013884, a: 1}
+  ButtonHoverColor: {r: 0.8113208, g: 0.62379855, b: 0.62379855, a: 1}
   ButtonNormalColor: {r: 1, g: 1, b: 1, a: 1}
   ButtonPressColor: {r: 0.7830189, g: 0.5577163, b: 0.5577163, a: 1}
   ButtonPressTime: 0.15
@@ -4457,6 +4472,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97fa2f4a51fadd14ba459462c6da24e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DevelopementBuild: 1
   PlayerID: 
 --- !u!1 &1451640099
 GameObject:
