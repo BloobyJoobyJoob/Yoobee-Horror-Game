@@ -1,13 +1,16 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Text;
+using System;
+using System.Threading.Tasks;
 
 public class MenuManager : MonoBehaviour
 {
     public static MenuManager Singleton = null;
+
+    [Header("Buttons")]
 
     public Color ButtonHoverColor;
     public Color ButtonNormalColor;
@@ -15,10 +18,12 @@ public class MenuManager : MonoBehaviour
     public float ButtonPressTime;
     public float ButtonHoverTime;
     public float ButtonPressScale;
+    public float ButtonClickDelayTime;
 
-    public GameObject[] DisableOnStart;
+    public GameObject interactionStopper;
 
     [Header("Menus")]
+
     public GameObject GameMenu;
     public GameObject JoinMenu;
     public GameObject PlayMenu;
@@ -31,7 +36,12 @@ public class MenuManager : MonoBehaviour
     public Button DifficultyButton;
     public Button CodeButton;
 
+    [Header("Random")]
+
+    public GameObject[] DisableOnStart;
+
     private string lobbyJoinCode = "*";
+    private Difficulty difficulty = Difficulty.Normal;
 
     private void Awake()
     {
@@ -49,22 +59,28 @@ public class MenuManager : MonoBehaviour
             go.SetActive(false);
         }
     }
-    private void ResizeCaret()
+    public void Exit()
     {
-        foreach (TMP_SelectionCaret item in GetComponentsInChildren<TMP_SelectionCaret>())
-        {
-            item.transform.localScale = new Vector3(item.transform.localScale.x, item.transform.localScale.y * 0.7f, item.transform.localScale.z);
-        }
-    }
-    public void InitPrivateLobbyMenu()
-    {
-        Invoke("ResizeCaret", 0.5f);
+        StartCoroutine(DelayButtonAction(() => {
+            Application.Quit();
+            Debug.Log("Quit!");
+        }));
     }
 
-    public void Exit() 
+    public void ToggleVisabilityDelayed(GameObject gameObject)
     {
-        Application.Quit();
-        Debug.Log("Quit!");
+        StartCoroutine(DelayButtonAction(() => {
+            gameObject.SetActive(!gameObject.activeInHierarchy);
+        }));
+    }
+
+    private IEnumerator DelayButtonAction(Action action)
+    {
+        interactionStopper.SetActive(true);
+        yield return new WaitForSeconds(ButtonClickDelayTime);
+        action();
+        interactionStopper.SetActive(false);
+        yield return null;
     }
 
     public void ThrowErrorSFX(ConnectionFailType failType)
@@ -94,9 +110,17 @@ public class MenuManager : MonoBehaviour
     {
         GUIUtility.systemCopyBuffer = lobbyJoinCode;
     }
-    public void InitGameMenu()
+
+    private void ResizeCarets()
     {
-        Invoke("ResizeCaret", 0.5f);
+        foreach (TMP_SelectionCaret item in GetComponentsInChildren<TMP_SelectionCaret>())
+        {
+            item.transform.localScale = new Vector3(item.transform.localScale.x, item.transform.localScale.y * 0.7f, item.transform.localScale.z);
+        }
+    }
+    public void ResizeCaretsWithDelay()
+    {
+        Invoke("ResizeCarets", 0.2f + ButtonClickDelayTime);
     }
 
     public void OnEditPlayer1()
@@ -109,18 +133,19 @@ public class MenuManager : MonoBehaviour
     }
     public async void JoinAsClient(TMP_InputField codeText)
     {
+        interactionStopper.SetActive(true);
+        await Task.Delay(Mathf.RoundToInt(ButtonClickDelayTime * 1000));
         await NetworkHelper.Singleton.JoinClient(ClientAttemptCallback, codeText.text);
+
+        interactionStopper.SetActive(false);
     }
     public async void CreateAsHost()
     {
-        await NetworkHelper.Singleton.JoinHost(ConnectAttemptCallback, true);
+        interactionStopper.SetActive(true);
+        await Task.Delay(Mathf.RoundToInt(ButtonClickDelayTime * 1000));
+        await NetworkHelper.Singleton.JoinHost(ConnectAttemptCallback, true, difficulty);
+        interactionStopper.SetActive(false);
     }
-
-    public async void JoinPublic()
-    {
-        await NetworkHelper.Singleton.JoinPublic(ConnectAttemptCallback);
-    }
-
     public void ClientAttemptCallback(bool started)
     {
         ConnectAttemptCallback(started, "");
@@ -139,13 +164,21 @@ public class MenuManager : MonoBehaviour
                 lobbyJoinCode = joinCode;
                 CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = joinCode;
             }
+
+            JoinMenu.SetActive(false);
+            PlayMenu.SetActive(false);
+            GameMenu.SetActive(true);
         }
         else
         {
-            CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "FaIlED";
+            Debug.LogError("Failed to connect");
         }
-         
-        JoinMenu.SetActive(false);
-        GameMenu.SetActive(true);
     }
+}
+
+public enum Difficulty { 
+    Easy,
+    Normal,
+    Hard,
+    Nightmare
 }

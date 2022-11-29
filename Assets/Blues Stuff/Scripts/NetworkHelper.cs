@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Relay;
@@ -17,6 +18,8 @@ public class NetworkHelper : MonoBehaviour
     public static NetworkHelper Singleton;
     public bool DevelopementBuild = true;
 
+    public UnityEvent OnOpponentConnect;
+
     [HideInInspector]
     [Tooltip("The current lobby the player is connected to")]
     public Lobby Lobby;
@@ -30,11 +33,14 @@ public class NetworkHelper : MonoBehaviour
     [HideInInspector]
     [Tooltip("The current lobby the player is connected to")]
     UnityTransport _transport;
+
+    bool soloLobby = true;
     private async void Awake()
     {
         if (Singleton == null)
         {
             Singleton = this;
+            DontDestroyOnLoad(this);
         }
         else
         {
@@ -68,14 +74,15 @@ public class NetworkHelper : MonoBehaviour
             }
             catch
             {
-                MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyConnectError);
+                MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyCreateError);
                 return;
             }
             a = await RelayService.Instance.JoinAllocationAsync(Lobby.Data[JoinCodeKey].Value);
         }
         catch
         {
-            MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.RelayConnectError);
+            MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.RelayAllocationCreateError);
+            callback(false);
             return;
         }
 
@@ -84,9 +91,19 @@ public class NetworkHelper : MonoBehaviour
         callback(NetworkManager.Singleton.StartClient());
     }
 
-    public async Task JoinHost(Action<bool, string> callback, bool isPrivate)
+    public async Task JoinHost(Action<bool, string> callback, bool isPrivate, Difficulty difficulty)
     {
-        Allocation a = await RelayService.Instance.CreateAllocationAsync(2);
+        Allocation a;
+
+        try
+        {
+            a = await RelayService.Instance.CreateAllocationAsync(2);
+        }
+        catch
+        {
+            callback(false, "");
+            return;
+        }
 
         string relayJoinCode = await RelayService.Instance.GetJoinCodeAsync(a.AllocationId);
 
@@ -101,26 +118,22 @@ public class NetworkHelper : MonoBehaviour
 
         lobbyOptions.IsPrivate = isPrivate;
 
-        Lobby = await Lobbies.Instance.CreateLobbyAsync("New Lobby", 2, lobbyOptions);
+        try
+        {
+            Lobby = await Lobbies.Instance.CreateLobbyAsync("New Lobby", 2, lobbyOptions);
+        }
+        catch
+        {
+            MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyCreateError);
+            callback(false, "");
+            return;
+        }
 
         StartCoroutine(LobbyHeartbeat(Lobby.Id, 15));
 
         _transport.SetHostRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData);
 
         callback(NetworkManager.Singleton.StartHost(), Lobby.LobbyCode);
-    }
-    public async Task JoinPublic(Action<bool, string> callback)
-    {
-        try
-        {
-            Lobby quickJoin = await Lobbies.Instance.QuickJoinLobbyAsync();
-        }
-        catch
-        {
-            await JoinHost(callback, false);
-            return;
-        }
-        callback(true, "");
     }
 
     IEnumerator LobbyHeartbeat(string lobbyID, float waitTime)
@@ -147,8 +160,20 @@ public class NetworkHelper : MonoBehaviour
             }
         }
     }
+
+    private void Update()
+    {
+        if (Lobby.AvailableSlots == 0 && soloLobby == false)
+        {
+            soloLobby = true;
+            OnOpponentConnect.Invoke();
+        }
+    }
 }
 
 public enum ConnectionFailType {
-    LobbyConnectError, RelayConnectError
+    LobbyCreateError, 
+    RelayAllocationCreateError, 
+    RelayAllocationJoinError, 
+    LobbyJoinError
 }
