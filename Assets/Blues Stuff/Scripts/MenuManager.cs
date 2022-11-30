@@ -31,7 +31,7 @@ public class MenuManager : MonoBehaviour
     [Header("Game Menu")]
 
     public TMP_InputField Player1;
-    public TMP_InputField Player2;
+    public TextMeshProUGUI Player2;
     public Button StartButton;
     public Button DifficultyButton;
     public Button CodeButton;

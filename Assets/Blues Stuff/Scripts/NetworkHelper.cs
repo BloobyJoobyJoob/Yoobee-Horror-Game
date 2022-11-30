@@ -16,9 +16,10 @@ using System.Collections;
 public class NetworkHelper : MonoBehaviour
 {
     public static NetworkHelper Singleton;
-    public bool DevelopementBuild = true;
 
-    public UnityEvent OnOpponentConnect;
+    public PlayerNetworkManager PlayerNetworkManager;
+    public bool DevelopementBuild = true;
+    public UnityEvent OnLobbyFill;
 
     [HideInInspector]
     [Tooltip("The current lobby the player is connected to")]
@@ -60,6 +61,8 @@ public class NetworkHelper : MonoBehaviour
         PlayerID = AuthenticationService.Instance.PlayerId;
 
         _transport = GetComponent<UnityTransport>();
+
+        OnLobbyFill.AddListener(OnLobbyFilled);
     }
 
     public async Task JoinClient(Action<bool> callback, string joinCode)
@@ -74,14 +77,14 @@ public class NetworkHelper : MonoBehaviour
             }
             catch
             {
-                MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyCreateError);
+                MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyJoinError);
                 return;
             }
             a = await RelayService.Instance.JoinAllocationAsync(Lobby.Data[JoinCodeKey].Value);
         }
         catch
         {
-            MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.RelayAllocationCreateError);
+            MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.RelayAllocationJoinError);
             callback(false);
             return;
         }
@@ -145,6 +148,16 @@ public class NetworkHelper : MonoBehaviour
         }
     }
 
+    private void OnLobbyFilled()
+    {
+        Debug.Log("Lobby Filled");
+
+        if (soloLobby == true && Lobbies.Instance.)
+        {
+
+        }
+    }
+
     private void OnDestroy()
     {
         StopAllCoroutines();
@@ -163,10 +176,10 @@ public class NetworkHelper : MonoBehaviour
 
     private void Update()
     {
-        if (Lobby.AvailableSlots == 0 && soloLobby == false)
+        if (Lobby?.AvailableSlots == 0 && soloLobby == true)
         {
-            soloLobby = true;
-            OnOpponentConnect.Invoke();
+            soloLobby = false;
+            OnLobbyFill.Invoke();
         }
     }
 }
