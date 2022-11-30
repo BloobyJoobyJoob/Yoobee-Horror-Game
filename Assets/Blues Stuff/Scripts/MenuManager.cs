@@ -30,8 +30,8 @@ public class MenuManager : MonoBehaviour
 
     [Header("Game Menu")]
 
-    public TMP_InputField Player1;
-    public TextMeshProUGUI Player2;
+    public TMP_InputField ClientUsername;
+    public TextMeshProUGUI OpponentUsername;
     public Button StartButton;
     public Button DifficultyButton;
     public Button CodeButton;
@@ -52,6 +52,7 @@ public class MenuManager : MonoBehaviour
         else
         {
             Debug.LogError("BNlue you ideiot");
+            return;
         }
 
         foreach (GameObject go in DisableOnStart)
@@ -123,13 +124,9 @@ public class MenuManager : MonoBehaviour
         Invoke("ResizeCarets", 0.2f + ButtonClickDelayTime);
     }
 
-    public void OnEditPlayer1()
+    public void OnEditUsername()
     {
-
-    }
-    public void OnEditPlayer2()
-    {
-
+        PlayerNetworkManager.ClientManager.SetUsername(ClientUsername.text);
     }
     public async void JoinAsClient(TMP_InputField codeText)
     {
@@ -175,10 +172,10 @@ public class MenuManager : MonoBehaviour
         }
     }
 }
-
-public enum Difficulty { 
-    Easy,
-    Normal,
-    Hard,
-    Nightmare
+public enum ConnectionFailType
+{
+    LobbyCreateError,
+    RelayAllocationCreateError,
+    RelayAllocationJoinError,
+    LobbyJoinError
 }

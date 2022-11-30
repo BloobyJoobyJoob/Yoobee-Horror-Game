@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Events;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Relay;
@@ -19,7 +18,6 @@ public class NetworkHelper : MonoBehaviour
 
     public PlayerNetworkManager PlayerNetworkManager;
     public bool DevelopementBuild = true;
-    public UnityEvent OnLobbyFill;
 
     [HideInInspector]
     [Tooltip("The current lobby the player is connected to")]
@@ -28,14 +26,12 @@ public class NetworkHelper : MonoBehaviour
     [HideInInspector]
     [Tooltip("The current player's Auth ID")]
     public string PlayerID;
-     
+    
     string JoinCodeKey = "a";
 
     [HideInInspector]
     [Tooltip("The current lobby the player is connected to")]
     UnityTransport _transport;
-
-    bool soloLobby = true;
     private async void Awake()
     {
         if (Singleton == null)
@@ -62,7 +58,7 @@ public class NetworkHelper : MonoBehaviour
 
         _transport = GetComponent<UnityTransport>();
 
-        OnLobbyFill.AddListener(OnLobbyFilled);
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnect;
     }
 
     public async Task JoinClient(Action<bool> callback, string joinCode)
@@ -148,17 +144,7 @@ public class NetworkHelper : MonoBehaviour
         }
     }
 
-    private void OnLobbyFilled()
-    {
-        Debug.Log("Lobby Filled");
-
-        if (soloLobby == true && Lobbies.Instance.)
-        {
-
-        }
-    }
-
-    private void OnDestroy()
+    public void OnDestroy()
     {
         StopAllCoroutines();
         if (Lobby != null)
@@ -172,21 +158,29 @@ public class NetworkHelper : MonoBehaviour
                 Lobbies.Instance.RemovePlayerAsync(Lobby.Id, PlayerID);
             }
         }
+
+        NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnect;
     }
 
-    private void Update()
+    private void OnClientConnect(ulong clientID)
     {
-        if (Lobby?.AvailableSlots == 0 && soloLobby == true)
+        if (NetworkManager.Singleton.IsServer)
         {
-            soloLobby = false;
-            OnLobbyFill.Invoke();
+            if (clientID == NetworkManager.Singleton.LocalClientId)
+            {
+                return;
+            }
+            else
+            {
+                MenuManager.Singleton.StartButton.interactable = true;
+                PlayerNetworkManager pnm = Instantiate(PlayerNetworkManager);
+                pnm.NetworkObject.SpawnWithOwnership(clientID, false);
+            }
+        }
+        else
+        {
+            PlayerNetworkManager pnm = Instantiate(PlayerNetworkManager);
+            pnm.NetworkObject.SpawnWithOwnership(clientID, false);
         }
     }
-}
-
-public enum ConnectionFailType {
-    LobbyCreateError, 
-    RelayAllocationCreateError, 
-    RelayAllocationJoinError, 
-    LobbyJoinError
 }
