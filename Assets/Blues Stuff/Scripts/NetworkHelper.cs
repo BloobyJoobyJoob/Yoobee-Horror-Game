@@ -164,23 +164,27 @@ public class NetworkHelper : MonoBehaviour
 
     private void OnClientConnect(ulong clientID)
     {
+        Debug.Log("Someone Connected");
         if (NetworkManager.Singleton.IsServer)
         {
             if (clientID == NetworkManager.Singleton.LocalClientId)
             {
-                return;
+                // As Host, host connected to relay
             }
             else
             {
-                MenuManager.Singleton.StartButton.interactable = true;
+                // As Host, Client connected to server
+
                 PlayerNetworkManager pnm = Instantiate(PlayerNetworkManager);
                 pnm.NetworkObject.SpawnWithOwnership(clientID, false);
+
+                pnm = Instantiate(PlayerNetworkManager);
+                pnm.NetworkObject.SpawnWithOwnership(NetworkManager.Singleton.LocalClientId, false);
             }
         }
         else
         {
-            PlayerNetworkManager pnm = Instantiate(PlayerNetworkManager);
-            pnm.NetworkObject.SpawnWithOwnership(clientID, false);
+            // As Client, Client connected to server
         }
     }
 }

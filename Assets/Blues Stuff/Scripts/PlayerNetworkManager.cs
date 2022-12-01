@@ -10,9 +10,9 @@ public class PlayerNetworkManager : NetworkBehaviour
     public static PlayerNetworkManager ClientManager = null;
     public static PlayerNetworkManager TeammateManager = null;
 
-    NetworkVariable<FixedString32Bytes> Username = new NetworkVariable<FixedString32Bytes>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    NetworkVariable<FixedString32Bytes> Username = new NetworkVariable<FixedString32Bytes>("Loading...", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
-    private void Awake()
+    public override void OnNetworkSpawn()
     {
         if (IsOwner)
         {
@@ -25,6 +25,11 @@ public class PlayerNetworkManager : NetworkBehaviour
                 Debug.LogError("Blue you smelly fart");
                 return;
             }
+
+            string un = PlayerPrefs.GetString("PlayerUsername", "Noob" + UnityEngine.Random.Range(100, 999).ToString());
+
+            Username.Value = new FixedString32Bytes(un);
+            MenuManager.Singleton.ClientUsername.text = un;
         }
         else
         {
@@ -37,20 +42,8 @@ public class PlayerNetworkManager : NetworkBehaviour
                 Debug.LogError("Blue you smelly fart");
                 return;
             }
-        }
-    }
-    public override void OnNetworkSpawn()
-    {
-        string un = PlayerPrefs.GetString("PlayerUsername", "Noob" + UnityEngine.Random.Range(100, 999).ToString());
 
-        if (IsOwner)
-        {
-            Username.Value = new FixedString32Bytes(un);
-            MenuManager.Singleton.ClientUsername.text = un;
-        }
-        else
-        {
-            MenuManager.Singleton.OpponentUsername.text = Username.Value.ToString();
+            MenuManager.Singleton.TeammateUsername.text = Username.Value.ToString();
             Username.OnValueChanged += OnUsernameChange;
         }
     }
@@ -59,6 +52,8 @@ public class PlayerNetworkManager : NetworkBehaviour
     {
         Username.Value = new FixedString32Bytes(name);
         MenuManager.Singleton.ClientUsername.text = name;
+        PlayerPrefs.SetString("PlayerUsername", name);
+        PlayerPrefs.Save();
     }
 
     public override void OnNetworkDespawn()
@@ -75,6 +70,6 @@ public class PlayerNetworkManager : NetworkBehaviour
 
     private void OnUsernameChange(FixedString32Bytes oldValue, FixedString32Bytes newValue)
     {
-        MenuManager.Singleton.OpponentUsername.text = Username.Value.ToString();
+        MenuManager.Singleton.TeammateUsername.text = Username.Value.ToString();
     }
 }
