@@ -43,7 +43,6 @@ public class MenuManager : MonoBehaviour
     public float CarotHeightMultiplier = 0.7f;
     public float CarotResizeDelay = 0.3f;
     private string lobbyJoinCode = "*";
-    private Difficulty difficulty = Difficulty.Normal;
 
     private void Awake()
     {
@@ -142,7 +141,7 @@ public class MenuManager : MonoBehaviour
     {
         interactionStopper.SetActive(true);
         await Task.Delay(Mathf.RoundToInt(ButtonClickDelayTime * 1000));
-        await NetworkHelper.Singleton.JoinHost(ConnectAttemptCallback, true, difficulty);
+        await NetworkHelper.Singleton.JoinHost(ConnectAttemptCallback, true, GameManager.Singleton.GameDifficulty);
         interactionStopper.SetActive(false);
     }
     public void ClientAttemptCallback(bool started)

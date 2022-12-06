@@ -13,6 +13,9 @@ public class PlayerController : NetworkBehaviour
     public static PlayerController TeammateManager = null;
 
     public CinemachineVirtualCamera Camera;
+    public Animator CameraRootAnimator;
+
+    public float runAnimationCrossfade = 0.5f;
 
     public float SprintSpeed;
     public float SneakSpeed;
@@ -23,7 +26,8 @@ public class PlayerController : NetworkBehaviour
 
     private CharacterController controller;
 
-    float Speed;
+    float maxSpeed;
+    float speed;
 
     Vector2 inputMovement;
     Vector3 gravityMovement;
@@ -33,12 +37,16 @@ public class PlayerController : NetworkBehaviour
 
     CinemachinePOV cameraPOV;
 
+    int moveSpeedHashAnm;
+
     #endregion
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
         cameraPOV = Camera.GetCinemachineComponent<CinemachinePOV>();
+
+        moveSpeedHashAnm = Animator.StringToHash("Movespeed");
     }
 
     public override void OnNetworkSpawn()
@@ -72,15 +80,16 @@ public class PlayerController : NetworkBehaviour
     private void Update()
     {
         Move();
+        BobHead();
     }
     void Move()
     {
         Vector2 walkSpeed;
 
-        Speed = sneak ? SneakSpeed : sprint ? SprintSpeed : WalkSpeed;
+        maxSpeed = sneak ? SneakSpeed : sprint ? SprintSpeed : WalkSpeed;
 
-        walkSpeed.y = inputMovement.y < 0 ? inputMovement.y * Speed * BackwardsSpeedMultiplier : Speed * inputMovement.y;
-        walkSpeed.x = inputMovement.x * Speed;
+        walkSpeed.y = inputMovement.y < 0 ? inputMovement.y * maxSpeed * BackwardsSpeedMultiplier : maxSpeed * inputMovement.y;
+        walkSpeed.x = inputMovement.x * maxSpeed * SidewaysSpeedMultiplier;
 
         transform.rotation = Quaternion.Euler(transform.rotation.x, transform.rotation.y + cameraPOV.m_HorizontalAxis.Value, transform.rotation.z);
 
@@ -96,6 +105,13 @@ public class PlayerController : NetworkBehaviour
         }
 
         controller.Move((walkingMovement + gravityMovement) * Time.deltaTime);
+
+        speed = walkingMovement.magnitude;
+    }
+
+    void BobHead()
+    {
+        CameraRootAnimator.SetFloat(moveSpeedHashAnm, speed);
     }
 
     #region GetInput
