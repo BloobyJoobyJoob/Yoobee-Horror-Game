@@ -59,6 +59,7 @@ public class NetworkHelper : MonoBehaviour
         _transport = GetComponent<UnityTransport>();
 
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnect;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnect;
     }
 
     public async Task JoinClient(Action<bool> callback, string joinCode)
@@ -71,16 +72,16 @@ public class NetworkHelper : MonoBehaviour
             {
                 Lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(joinCode);
             }
-            catch
+            catch (Exception e)
             {
-                MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyJoinError);
+                MenuManager.Singleton.ThrowErrorSFX(e);
                 return;
             }
             a = await RelayService.Instance.JoinAllocationAsync(Lobby.Data[JoinCodeKey].Value);
         }
-        catch
+        catch (Exception e)
         {
-            MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.RelayAllocationJoinError);
+            MenuManager.Singleton.ThrowErrorSFX(e);
             callback(false);
             return;
         }
@@ -98,13 +99,25 @@ public class NetworkHelper : MonoBehaviour
         {
             a = await RelayService.Instance.CreateAllocationAsync(2);
         }
-        catch
+        catch (Exception e)
         {
+            MenuManager.Singleton.ThrowErrorSFX(e);
             callback(false, "");
             return;
         }
 
-        string relayJoinCode = await RelayService.Instance.GetJoinCodeAsync(a.AllocationId);
+        string relayJoinCode;
+
+        try
+        {
+            relayJoinCode = await RelayService.Instance.GetJoinCodeAsync(a.AllocationId);
+        }
+        catch (Exception e)
+        {
+            MenuManager.Singleton.ThrowErrorSFX(e);
+            callback(false, "");
+            return;
+        }
 
         CreateLobbyOptions lobbyOptions = new CreateLobbyOptions
         {
@@ -121,9 +134,9 @@ public class NetworkHelper : MonoBehaviour
         {
             Lobby = await Lobbies.Instance.CreateLobbyAsync("New Lobby", 2, lobbyOptions);
         }
-        catch
+        catch (Exception e)
         {
-            MenuManager.Singleton.ThrowErrorSFX(ConnectionFailType.LobbyCreateError);
+            MenuManager.Singleton.ThrowErrorSFX(e);
             callback(false, "");
             return;
         }
@@ -143,25 +156,6 @@ public class NetworkHelper : MonoBehaviour
             yield return new WaitForSecondsRealtime(waitTime);
         }
     }
-
-    public void OnDestroy()
-    {
-        StopAllCoroutines();
-        if (Lobby != null)
-        {
-            if (Lobby.HostId == PlayerID)
-            {
-                Lobbies.Instance.DeleteLobbyAsync(Lobby.Id);
-            }
-            else
-            {
-                Lobbies.Instance.RemovePlayerAsync(Lobby.Id, PlayerID);
-            }
-        }
-
-        NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnect;
-    }
-
     private void OnClientConnect(ulong clientID)
     {
         Debug.Log("Someone Connected");
@@ -169,7 +163,7 @@ public class NetworkHelper : MonoBehaviour
         {
             if (clientID == NetworkManager.Singleton.LocalClientId)
             {
-                // As Host, host connected to relay
+                // As Host, host connected to server
             }
             else
             {
@@ -186,5 +180,10 @@ public class NetworkHelper : MonoBehaviour
         {
             // As Client, Client connected to server
         }
+    }
+
+    private void OnClientDisconnect(ulong clientID)
+    {
+
     }
 }
