@@ -155,7 +155,7 @@ public class MenuManager : MonoBehaviour
         {
             if (joinCode == "")
             {
-                CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "CoNnECtED";
+
             }
             else
             {
@@ -171,6 +171,11 @@ public class MenuManager : MonoBehaviour
         {
             Debug.LogError("Failed to connect");
         }
+    }
+
+    public void OnLobbyFill()
+    {
+        CodeButton.GetComponentInChildren<TextMeshProUGUI>().text = "CoNnECtED";
     }
 }
 public enum ConnectionFailType

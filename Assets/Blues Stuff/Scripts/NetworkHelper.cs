@@ -167,7 +167,7 @@ public class NetworkHelper : MonoBehaviour
             }
             else
             {
-                // As Host, Client connected to server
+                MenuManager.Singleton.OnLobbyFill();
 
                 PlayerNetworkManager pnm = Instantiate(PlayerNetworkManager);
                 pnm.NetworkObject.SpawnWithOwnership(clientID, false);
@@ -178,7 +178,7 @@ public class NetworkHelper : MonoBehaviour
         }
         else
         {
-            // As Client, Client connected to server
+            MenuManager.Singleton.OnLobbyFill();
         }
     }
 
